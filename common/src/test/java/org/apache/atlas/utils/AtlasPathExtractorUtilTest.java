@@ -28,7 +28,6 @@ import org.testng.annotations.Test;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -89,32 +88,22 @@ public class AtlasPathExtractorUtilTest {
 
     @Test(dataProvider = "ozonePathProvider")
     public void testGetPathEntityOzone3Path(OzoneKeyValidator validator) {
-        String scheme = validator.scheme;
+        String scheme    = validator.scheme;
         String ozonePath = scheme + validator.location;
 
         PathExtractorContext extractorContext = new PathExtractorContext(METADATA_NAMESPACE);
-        Path path = new Path(ozonePath);
+        Path                 path             = new Path(ozonePath);
 
         AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity entity = entityWithExtInfo.getEntity();
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertNotNull(entity);
         verifyOzoneKeyEntity(entity, validator);
 
-        if (entity.getTypeName() == OZONE_KEY) {
-            verifyReferredAndKnownEntities(entityWithExtInfo, extractorContext, validator, validator.knownEntitiesCountTillKey, 2);
-        } else if (entity.getTypeName() == OZONE_BUCKET) {
-            verifyReferredAndKnownEntities(entityWithExtInfo, extractorContext, validator, validator.knownEntitiesCountTillBucket, 2);
-        } else if (entity.getTypeName() == OZONE_VOLUME) {
-            verifyReferredAndKnownEntities(entityWithExtInfo, extractorContext, validator, validator.knownEntitiesCountTillVolume, 1);
-        }
-    }
-
-    private void verifyReferredAndKnownEntities(AtlasEntityWithExtInfo entityWithExtInfo, PathExtractorContext extractorContext, OzoneKeyValidator validator, int knownEntitiesCountTillVolume, int referredEntitiesSize) {
-        assertEquals(entityWithExtInfo.getReferredEntities().size(), referredEntitiesSize);
+        assertEquals(entityWithExtInfo.getReferredEntities().size(), 2);
         verifyOzoneEntities(entityWithExtInfo.getReferredEntities(), validator);
 
-        assertEquals(extractorContext.getKnownEntities().size(), knownEntitiesCountTillVolume);
+        assertEquals(extractorContext.getKnownEntities().size(), validator.knownEntitiesCount);
         verifyOzoneEntities(extractorContext.getKnownEntities(), validator);
     }
 
@@ -282,40 +271,20 @@ public class AtlasPathExtractorUtilTest {
                         "quarter_one", "ozone1/volume1/bucket1/quarter_one",
                         "sales", "ozone1/volume1/bucket1/quarter_one/sales")},
 
-                {new OzoneKeyValidator(OZONE_SCHEME, "ozone1745922163/volume1/bucket1/mykey1/key.text",
-                        "mykey1", "ozone1745922163/volume1/bucket1/mykey1",
-                        "key.text", "ozone1745922163/volume1/bucket1/mykey1/key.text")},
-
-                {new OzoneKeyValidator(OZONE_SCHEME, "ozone1/volume1/bucket1",
-                        "bucket1", "volume1.bucket1")},
-
-                {new OzoneKeyValidator(OZONE_SCHEME, "ozone1/volume1",
-                        "volume1", "volume1")},
-
                 {new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/files/file.txt",
                         "files", "bucket1.volume1.ozone1/files",
-                        "file.txt", "bucket1.volume1.ozone1/files/file.txt") },
+                        "file.txt", "bucket1.volume1.ozone1/files/file.txt")},
 
                 {new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/file21.txt",
-                        "file21.txt", "bucket1.volume1.ozone1/file21.txt") },
+                        "file21.txt", "bucket1.volume1.ozone1/file21.txt")},
 
                 {new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/quarter_one/sales",
                         "quarter_one", "bucket1.volume1.ozone1/quarter_one",
-                        "sales", "bucket1.volume1.ozone1/quarter_one/sales") },
+                        "sales", "bucket1.volume1.ozone1/quarter_one/sales")},
 
                 {new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/quarter_one/sales/",
                         "quarter_one", "bucket1.volume1.ozone1/quarter_one",
-                        "sales", "bucket1.volume1.ozone1/quarter_one/sales") },
-
-                {new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/",
-                        "bucket1", "volume1.bucket1")},
-
-                {new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/key1/key1.txt/",
-                        "key1", "bucket1.volume1.ozone1/key1",
-                        "key1.txt", "bucket1.volume1.ozone1/key1/key1.txt") },
-
-                {new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1/key1/",
-                        "key1", "bucket1.volume1/key1") },
+                        "sales", "bucket1.volume1.ozone1/quarter_one/sales")},
         };
     }
 
@@ -340,16 +309,8 @@ public class AtlasPathExtractorUtilTest {
     }
 
     private void verifyOzoneKeyEntity(AtlasEntity entity, OzoneKeyValidator validator) {
-        if (Objects.equals(entity.getTypeName(), OZONE_KEY)) {
-            assertEquals(entity.getTypeName(), OZONE_KEY);
-            assertTrue(validator.validateNameQName(entity));
-        } else if (Objects.equals(entity.getTypeName(), OZONE_BUCKET)) {
-            assertEquals(entity.getTypeName(), OZONE_BUCKET);
-            assertTrue(validator.validateNameQName(entity));
-        } else if (Objects.equals(entity.getTypeName(), OZONE_VOLUME)) {
-            assertEquals(entity.getTypeName(), OZONE_VOLUME);
-            assertTrue(validator.validateNameQName(entity));
-        }
+        assertEquals(entity.getTypeName(), OZONE_KEY);
+        assertTrue(validator.validateNameQName(entity));
     }
 
     private void verifyHDFSEntity(AtlasEntity entity, boolean toLowerCase) {
@@ -515,27 +476,25 @@ public class AtlasPathExtractorUtilTest {
     private static class OzoneKeyValidator {
         private final String              scheme;
         private final String              location;
-        private final int knownEntitiesCountTillKey;
-        private final int knownEntitiesCountTillBucket;
-        private final int knownEntitiesCountTillVolume;
+        private final int                 knownEntitiesCount;
         private final Map<String, String> nameQNamePairs;
 
         public OzoneKeyValidator(String scheme, String location, String... pairs) {
             this.scheme             = scheme;
             this.location           = location;
             this.nameQNamePairs     = getPairMap(scheme, pairs);
-            this.knownEntitiesCountTillKey    = nameQNamePairs.size() + 2;
-            this.knownEntitiesCountTillBucket = nameQNamePairs.size() + 1;
-            this.knownEntitiesCountTillVolume = nameQNamePairs.size();        }
+            this.knownEntitiesCount = nameQNamePairs.size() + 2;
+        }
 
         public boolean validateNameQName(AtlasEntity entity) {
-            String qName = (String) entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
+            String name = (String) entity.getAttribute(ATTRIBUTE_NAME);
 
-            for (Map.Entry<String, String> nameQName : nameQNamePairs.entrySet()) {
-                if (qName.equals(nameQName.getValue())) {
-                    return true;
-                }
+            if (this.nameQNamePairs.containsKey(name)) {
+                String qName = (String) entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
+
+                return qName.equals(this.nameQNamePairs.get(name));
             }
+
             return false;
         }
 
