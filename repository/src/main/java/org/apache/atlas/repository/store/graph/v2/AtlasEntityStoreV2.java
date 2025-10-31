@@ -1110,6 +1110,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications, boolean replaceBusinessAttributes) throws AtlasBaseException {
         LOG.debug("==> createOrUpdate()");
+        LOG.info("==> createOrUpdate()");
 
         if (entityStream == null || !entityStream.hasNext()) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");

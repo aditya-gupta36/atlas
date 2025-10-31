@@ -94,6 +94,8 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
     @Override
     public void onEntitiesAdded(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException {
+        LOG.info("===> Entered onEntitiesAdded");
+
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
         FixedBufferList<EntityAuditEventV2> entitiesAdded = getAuditEventsList();

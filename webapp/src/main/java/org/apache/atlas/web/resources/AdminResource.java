@@ -163,7 +163,7 @@ public class AdminResource {
     private static final String        OPERATION_STATUS                 = "operationStatus";
     private static final List<String>  TIMEZONE_LIST                    = Arrays.asList(TimeZone.getAvailableIDs());
     private static final String        METRICS_PERSIST_INTERVAL         = "atlas.metrics.persist.schedule";
-    private static final String        METRICS_PERSIST_INTERVAL_DEFAULT = "0 0 0/1 * * *";     // 1 hour interval
+    private static final String METRICS_PERSIST_INTERVAL_DEFAULT = "*/60 * * * * *";  // 30 seconds
     private static final String        PURGE_CRON_EXPRESSION            = "atlas.purge.cron.expression";
     private static final String        PURGE_CRON_EXPRESSION_DEFAULT    = "* * * 30 2 ?"; // disabled by default, user controlled scheduling only
     private static final String        ACTIVE                           = "ACTIVE";
@@ -448,7 +448,6 @@ public class AdminResource {
         try {
             // auto persist
             saveMetrics();
-
             // auto purge
             metricsService.purgeMetricsStats();
         } finally {
